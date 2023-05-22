@@ -23,6 +23,15 @@ const _low_html = `
         </div>
     </div>
 </div>
+
+<ul id="loweditor-custom-menu">
+    <li id="loweditor-rinsert">右边插入1列</li>
+    <li id="loweditor-linsert">左边插入1列</li>
+    <li id="loweditor-uinsert">上边插入1行</li>
+    <li id="loweditor-dinsert">下边插入1行</li>
+    <li id="loweditor-rdelete">删除行</li>
+    <li id="loweditor-cdelete">删除列</li>
+</ul>
 `;
 const $$ = document.getElementById.bind(document);
 const $c = document.createElement.bind(document);
@@ -30,6 +39,13 @@ const $c = document.createElement.bind(document);
 function LowEditor(containerid, options) {
     $$(containerid).innerHTML = _low_html;
     const editor = $$("loweditor-editor");
+    // 事件发生时的node
+    var originNode = null;
+    // 表格的右键菜单
+    var custom_menu = document.getElementById("loweditor-custom-menu");
+    document.addEventListener("click", function(event){
+        custom_menu.style.display = "none";
+    });
     function insertDom(dom) {
         const selection = window.getSelection();
         var node = selection.anchorNode;
@@ -89,7 +105,7 @@ function LowEditor(containerid, options) {
             var row = $c('tr');
             for (var j = 0; j < cols; j++) {
                 var cell = $c('td');
-                cell.innerHTML = '-';
+                cell.innerHTML = '<br>';
                 cell.style.border = "1px solid black";
                 row.appendChild(cell);
             }
@@ -99,7 +115,121 @@ function LowEditor(containerid, options) {
         table.appendChild(ext);
         range.insertNode(table);
         selection.removeAllRanges();
+        tbody.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+            var selection = window.getSelection();
+            var anchorNode = selection.anchorNode;
+            originNode = anchorNode;
+            custom_menu.style.display = "block";
+            //获取鼠标视口位置
+            custom_menu.style.top = event.clientY + "px";
+            custom_menu.style.left = event.clientX + "px";
+        });
     }
+
+    function _rlinsert(call) {
+        var ptr = originNode.parentNode.parentNode;
+        var td = originNode.parentNode;
+        if(originNode.tagName&&originNode.tagName.toLowerCase() == "td") {
+            ptr = originNode.parentNode;
+            td = originNode;
+        }
+        var cur = 0;
+        for (let index = 0; index < ptr.childNodes.length; index++) {
+            const e = ptr.childNodes[index];
+            if(e == td) {
+                cur = index;
+                break;
+            }
+        }
+        // 插入头
+        var ths = ptr.parentNode.parentNode.getElementsByTagName('th');
+        var th = $c('th');
+        th.innerText = 'insert';
+        th.style.border = "1px solid black";
+        call(ths[cur], th);
+        // 插入表格
+        var tbody = ptr.parentNode;
+        var trs = tbody.getElementsByTagName('tr');
+        for (let index = 0; index < trs.length; index++) {
+            const tr = trs[index];
+            var td = $c('td');
+            td.innerHTML = '<br>';
+            td.style.border = "1px solid black";
+            call(tr.childNodes[cur], td);
+        }
+    }
+    $$("loweditor-rinsert").addEventListener("click", function(){
+        // 右边插入
+        _rlinsert((a, b)=>{
+            a.after(b);
+        });
+    });
+    $$("loweditor-linsert").addEventListener("click", function(){
+        // 左边插入
+        _rlinsert((a, b)=>{
+            a.before(b);
+        });
+    });
+    function _udinsert(call) {
+        var ptr = originNode.parentNode.parentNode;
+        if(originNode.tagName&&originNode.tagName.toLowerCase() == "td") {
+            ptr = originNode.parentNode;
+        }
+        var tr=ptr.cloneNode(true);
+        var tds = tds=tr.getElementsByTagName('td');
+        for (let index = 0; index < tds.length; index++) {
+            const td = tds[index];
+            td.innerHTML = '<br>';
+        }
+        call(ptr, tr);
+    }
+    $$("loweditor-uinsert").addEventListener("click", function(){
+        // 上边插入
+        _udinsert((ptr, tr) => {
+            ptr.before(tr);
+        });
+    });
+    $$("loweditor-dinsert").addEventListener("click", function(){
+        // 下边插入
+        _udinsert((ptr, tr) => {
+            ptr.after(tr);
+        });
+    });
+    $$("loweditor-rdelete").addEventListener("click", function(){
+        // 删除行
+        var ptr = originNode.parentNode.parentNode;
+        if(originNode.tagName&&originNode.tagName.toLowerCase() == "td") {
+            ptr = originNode.parentNode;
+        }
+        ptr.remove();
+    });
+    $$("loweditor-cdelete").addEventListener("click", function(){
+        // 删除列
+        var ptr = originNode.parentNode.parentNode;
+        var td = originNode.parentNode;
+        if(originNode.tagName&&originNode.tagName.toLowerCase() == "td") {
+            ptr = originNode.parentNode;
+            td = originNode;
+        }
+        var cur = 0;
+        for (let index = 0; index < ptr.childNodes.length; index++) {
+            const e = ptr.childNodes[index];
+            if(e == td) {
+                cur = index;
+                break;
+            }
+        }
+        // 删除头
+        var ths = ptr.parentNode.parentNode.getElementsByTagName('th');
+        ths[cur].remove();
+        // 删除表格
+        var tbody = ptr.parentNode;
+        var trs = tbody.getElementsByTagName('tr');
+        for (let index = 0; index < trs.length; index++) {
+            trs[index].childNodes[cur].remove();
+        }
+    });
     function handleHeader() {
         // 获取光标
         var selection = window.getSelection();
@@ -267,7 +397,6 @@ function LowEditor(containerid, options) {
             handleSortedList();
         }
     });
-    var originNode = null;
     editor.addEventListener('keydown', (e) => {
         if (e.keyCode == 13) {
             // 回车
