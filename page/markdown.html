@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>loweditor</title>
+    <link href="loweditor/loweditor.css" rel="stylesheet">
+    <script src="loweditor/loweditor.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+    <script src="https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js"></script>
+</head>
+<body>
+    <div id="editor" style="float: left;width: 48%;"></div>
+    <button id="btn" style="margin-top: 50px;">=&gt;</button>
+    <textarea id="markdown" style="float: right;width: 48%;margin-top: 50px;height: 200px;"></textarea>
+</body>
+<script>
+    var editor = LowEditor("editor", {
+        file: {
+            prefix: "files/",
+            upload: "/upload"
+        },
+        code_onload: (code) => {
+            hljs.highlightElement(code);
+        }
+    });
+    var turndownService = new TurndownService({
+        headingStyle: "atx",
+        emDelimiter: "*",
+        preformattedCode: true,
+        codeBlockStyle: "fenced"
+    });
+    turndownService.use(turndownPluginGfm.gfm);
+    document.getElementById('btn').addEventListener('click', () => {
+        var markdown = turndownService.turndown(editor.getHtml());
+        document.getElementById('markdown').textContent = markdown;
+    });
+</script>
+</html>

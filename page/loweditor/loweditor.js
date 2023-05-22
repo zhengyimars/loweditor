@@ -432,8 +432,10 @@ function LowEditor(containerid, options) {
             var pre = $c("pre");
             pre.setAttribute("contenteditable", "false");
             var code = $c("code");
-            code.setAttribute('class', `language-${lang}`);
-            code.innerText = $$("loweditor-code-input").value;
+            if(lang) {
+                code.setAttribute('class', `language-${lang}`);
+            }
+            code.textContent = $$("loweditor-code-input").value;
             pre.appendChild(code);
             originNode.after(pre);
             pre.after($c("br"));
@@ -441,6 +443,9 @@ function LowEditor(containerid, options) {
             // 清理
             originNode = null;
             $$("loweditor-code-input").value = '';
+            if(options.code_onload) {
+                options.code_onload(code);
+            }
         }
     });
     var showModal = function () {
