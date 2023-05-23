@@ -1,5 +1,5 @@
 const _low_html = `
-<div id="loweditor-toolbar" style="margin-top: 10px;">
+<div id="loweditor-toolbar" style="margin-top: 10px;display: none;">
 <button id="loweditor-ap-strong" class="loweditor-tool-item"><b>B</b></button>
 <button id="loweditor-ap-em" class="loweditor-tool-item"><em>I</em></button>
 <button id="loweditor-ap-table" class="loweditor-tool-item"><b>插入表格&gt;</b></button>
@@ -24,7 +24,7 @@ const _low_html = `
     </div>
 </div>
 
-<ul id="loweditor-custom-menu">
+<ul id="loweditor-custom-menu" style="position: fixed;">
     <li id="loweditor-rinsert">右边插入1列</li>
     <li id="loweditor-linsert">左边插入1列</li>
     <li id="loweditor-uinsert">上边插入1行</li>
@@ -39,16 +39,53 @@ const $c = document.createElement.bind(document);
 function LowEditor(containerid, options) {
     $$(containerid).innerHTML = _low_html;
     const editor = $$("loweditor-editor");
-    if(options.editable) {
-        editor.setAttribute("contenteditable", true);
-    }
-    // 事件发生时的node
-    var originNode = null;
     // 表格的右键菜单
-    var custom_menu = document.getElementById("loweditor-custom-menu");
+    var custom_menu = $$("loweditor-custom-menu");
     document.addEventListener("click", function(event){
         custom_menu.style.display = "none";
     });
+    var menuEvent = function(event) {
+        event.preventDefault();
+        var selection = window.getSelection();
+        var anchorNode = selection.anchorNode;
+        originNode = anchorNode;
+        custom_menu.style.display = "block";
+        //获取鼠标视口位置
+        custom_menu.style.top = event.clientY + "px";
+        custom_menu.style.left = event.clientX + "px";
+    }
+    var enableMenu = function() {
+        var tbodys = editor.querySelectorAll('tbody');
+        for (let index = 0; index < tbodys.length; index++) {
+            var tbody = tbodys[index];
+            tbody.addEventListener("contextmenu", menuEvent);
+        }
+    }
+    var disableMenu = function() {
+        var tbodys = editor.querySelectorAll('tbody');
+        for (let index = 0; index < tbodys.length; index++) {
+            var tbody = tbodys[index];
+            tbody.removeEventListener("contextmenu", menuEvent);
+        }
+    }
+    var setEditable = function (enable) {
+        editor.setAttribute("contenteditable", enable);
+        if(enable) {
+            $$("loweditor-toolbar").style.display=null;
+            // 表格允许编辑
+            enableMenu();
+        } else {
+            $$("loweditor-toolbar").style.display='none';
+            // 表格不许编辑
+            disableMenu();
+        }
+    }
+    if(options.editable) {
+        setEditable(true);
+    }
+    // 事件发生时的node
+    var originNode = null;
+
     function insertDom(dom) {
         const selection = window.getSelection();
         var node = selection.anchorNode;
@@ -118,16 +155,7 @@ function LowEditor(containerid, options) {
         table.appendChild(ext);
         range.insertNode(table);
         selection.removeAllRanges();
-        tbody.addEventListener("contextmenu", (event) => {
-            event.preventDefault();
-            var selection = window.getSelection();
-            var anchorNode = selection.anchorNode;
-            originNode = anchorNode;
-            custom_menu.style.display = "block";
-            //获取鼠标视口位置
-            custom_menu.style.top = event.clientY + "px";
-            custom_menu.style.left = event.clientX + "px";
-        });
+        enableMenu();
     }
 
     function _rlinsert(call) {
@@ -138,8 +166,9 @@ function LowEditor(containerid, options) {
             td = originNode;
         }
         var cur = 0;
-        for (let index = 0; index < ptr.childNodes.length; index++) {
-            const e = ptr.childNodes[index];
+        var tds = ptr.getElementsByTagName("td");
+        for (let index = 0; index < tds.length; index++) {
+            const e = tds[index];
             if(e == td) {
                 cur = index;
                 break;
@@ -159,7 +188,7 @@ function LowEditor(containerid, options) {
             var td = $c('td');
             td.innerHTML = '<br>';
             td.style.border = "1px solid black";
-            call(tr.childNodes[cur], td);
+            call(tr.children[cur], td);
         }
     }
     $$("loweditor-rinsert").addEventListener("click", function(){
@@ -216,8 +245,9 @@ function LowEditor(containerid, options) {
             td = originNode;
         }
         var cur = 0;
-        for (let index = 0; index < ptr.childNodes.length; index++) {
-            const e = ptr.childNodes[index];
+        var tds = ptr.getElementsByTagName("td");
+        for (let index = 0; index < tds.length; index++) {
+            const e = tds[index];
             if(e == td) {
                 cur = index;
                 break;
@@ -230,7 +260,7 @@ function LowEditor(containerid, options) {
         var tbody = ptr.parentNode;
         var trs = tbody.getElementsByTagName('tr');
         for (let index = 0; index < trs.length; index++) {
-            trs[index].childNodes[cur].remove();
+            trs[index].children[cur].remove();
         }
     });
     function handleHeader() {
@@ -477,9 +507,6 @@ function LowEditor(containerid, options) {
         setHtml: function (html) {
             this.editor.innerHTML = html;
         },
-        setEditable: function (enable) {
-            this.editor.setAttribute("contenteditable", enable);
-            $$("loweditor-toolbar").hidden=!enable;
-        }
+        setEditable
     };
 }
