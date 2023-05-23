@@ -6,7 +6,7 @@ const _low_html = `
 <input id="loweditor-table-rows" class="loweditor-tool-input-item" placeholder="行">
 <input id="loweditor-table-cols" class="loweditor-tool-input-item" placeholder="列">
 </div>
-<div id="loweditor-editor" class="loweditor-editor" contenteditable="true"></div>
+<div id="loweditor-editor" class="loweditor-editor"></div>
 
 <div id="loweditor-code-modal" class="loweditor-modal">
     <div class="loweditor-modal-content">
@@ -39,6 +39,9 @@ const $c = document.createElement.bind(document);
 function LowEditor(containerid, options) {
     $$(containerid).innerHTML = _low_html;
     const editor = $$("loweditor-editor");
+    if(options.editable) {
+        editor.setAttribute("contenteditable", true);
+    }
     // 事件发生时的node
     var originNode = null;
     // 表格的右键菜单
