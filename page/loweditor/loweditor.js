@@ -1,5 +1,5 @@
 const _low_html = `
-<div style="margin-top: 10px;">
+<div id="loweditor-toolbar" style="margin-top: 10px;">
 <button id="loweditor-ap-strong" class="loweditor-tool-item"><b>B</b></button>
 <button id="loweditor-ap-em" class="loweditor-tool-item"><em>I</em></button>
 <button id="loweditor-ap-table" class="loweditor-tool-item"><b>插入表格&gt;</b></button>
@@ -398,7 +398,12 @@ function LowEditor(containerid, options) {
         }
     });
     editor.addEventListener('keydown', (e) => {
-        if (e.keyCode == 13) {
+        if (e.ctrlKey && e.key === 's') {
+            if(options.onsave) {
+                e.preventDefault();
+                options.onsave();
+            }
+        } else if (e.keyCode == 13) {
             // 回车
             var selection = window.getSelection();
             var anchorNode = selection.anchorNode;
@@ -471,6 +476,7 @@ function LowEditor(containerid, options) {
         },
         setEditable: function (enable) {
             this.editor.setAttribute("contenteditable", enable);
+            $$("loweditor-toolbar").hidden=!enable;
         }
     };
 }
